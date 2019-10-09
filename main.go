@@ -15,13 +15,17 @@ import (
 )
 
 func log(msg string) {
-	logFile, _ := os.OpenFile("/home/logs/detechHealthy.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	info := fmt.Sprintf("[%s] %s", time.Now().Format("2006-01-02 15:04:05.99999"), msg)
-	logFile.WriteString(info)
+	if config.Logger == "1" {
+		logFile, _ := os.OpenFile("/home/logs/detechHealthy.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		info := fmt.Sprintf("[%s] %s", time.Now().Format("2006-01-02 15:04:05.99999"), msg)
+		logFile.WriteString(info)
+	}
 }
 
+var config Config
+
 func main() {
-	config, err := loadConfig()
+	err := loadConfig()
 	if err != nil {
 		panic(err)
 	}
@@ -50,27 +54,28 @@ func main() {
 
 	msg := fmt.Sprintf("%s:PID:%d ,response: %s\n", status["mysql_status"], os.Getpid(), string(data))
 	log(msg)
+
 }
 
 type Config struct {
-	Logger int    `ini:"logger"`
+	Logger string `ini:"logger"`
 	URL    string `ini:"URL"`
 }
 
-func loadConfig() (config Config, err error) {
+func loadConfig() (err error) {
 	file, _ := exec.LookPath(os.Args[0])
 	path, _ := filepath.Abs(file)
 	index := strings.LastIndex(path, string(os.PathSeparator))
 
 	cfg, err := ini.Load(path[:index] + "/config.ini") //load config
 	if err != nil {
-		return config, err
+		return err
 	}
 
 	err = cfg.MapTo(&config) //Parser To Struct
 	if err != nil {
-		return config, err
+		return err
 	}
 
-	return config, nil
+	return nil
 }
